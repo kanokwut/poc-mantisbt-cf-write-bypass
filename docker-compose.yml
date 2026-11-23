@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: bugtracker
+      POSTGRES_USER: mantis
+      POSTGRES_PASSWORD: mantis
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mantis -d bugtracker"]
+      interval: 3s
+      retries: 10
+
+  mantis:
+    image: php:8.2-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${PORT:-8989}:80"
+    volumes:
+      - ./setup.sh:/setup.sh:ro
+      - ./seed.php:/seed.php:ro
+    environment:
+      MANTIS_VERSION: ${MANTIS_VERSION:-release-2.28.4}
+    entrypoint: ["/bin/bash", "/setup.sh"]
